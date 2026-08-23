@@ -10,8 +10,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ryuhosoy.famousfromhereapp",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleAllowMixedLocalizations": true
       }
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "ja": "./locales/ja.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -20,10 +25,20 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "現在地から出身の有名人を検索するために位置情報を使用します。"
+          "locationWhenInUsePermission": "This app uses your location to find celebrities from your current area.",
+          "locationAlwaysAndWhenInUsePermission": "This app uses your location to find celebrities from your current area.",
+          "locationAlwaysPermission": "This app uses your location to find celebrities from your current area."
         }
       ],
-      "expo-localization"
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": ["en", "ja"],
+            "android": ["en", "ja"]
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

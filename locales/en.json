@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "This app uses your location to find celebrities from your current area.",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "This app uses your location to find celebrities from your current area.",
+    "NSLocationAlwaysUsageDescription": "This app uses your location to find celebrities from your current area."
+  }
+}

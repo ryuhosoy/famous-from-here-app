@@ -1,0 +1,7 @@
+{
+  "ios": {
+    "NSLocationWhenInUseUsageDescription": "現在地から出身の有名人を検索するために位置情報を使用します。",
+    "NSLocationAlwaysAndWhenInUseUsageDescription": "現在地から出身の有名人を検索するために位置情報を使用します。",
+    "NSLocationAlwaysUsageDescription": "現在地から出身の有名人を検索するために位置情報を使用します。"
+  }
+}
