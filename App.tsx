@@ -4,7 +4,6 @@ import {
   FlatList,
   Image,
   Keyboard,
-  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -17,6 +16,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { fetchCelebritiesByCandidates, NotFoundError } from './src/api/wikipedia';
 import { getCurrentPlaceCandidates, LocationError } from './src/api/location';
+import { CelebrityDetail } from './src/components/CelebrityDetail';
 import { Celebrity, SearchResult } from './src/types';
 import { detectLang, getStrings } from './src/i18n';
 
@@ -37,6 +37,7 @@ function AppContent() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SearchResult | null>(null);
+  const [selected, setSelected] = useState<Celebrity | null>(null);
 
   const runSearch = useCallback(async (candidates: string[]) => {
     setLoading(true);
@@ -91,7 +92,7 @@ function AppContent() {
   }, [runSearch]);
 
   const renderItem = ({ item }: { item: Celebrity }) => (
-    <Pressable style={styles.card} onPress={() => Linking.openURL(item.pageUrl)}>
+    <Pressable style={styles.card} onPress={() => setSelected(item)}>
       {item.thumbnailUrl ? (
         <Image source={{ uri: item.thumbnailUrl }} style={styles.thumbnail} />
       ) : (
@@ -175,6 +176,13 @@ function AppContent() {
           <Text style={styles.centerBoxText}>{t.idleHint}</Text>
         </View>
       )}
+
+      <CelebrityDetail
+        celebrity={selected}
+        lang={lang}
+        t={t}
+        onClose={() => setSelected(null)}
+      />
     </SafeAreaView>
   );
 }

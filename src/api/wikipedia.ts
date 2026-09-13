@@ -168,6 +168,34 @@ async function getPageDetails(apiBase: string, pageids: number[], lang: Lang): P
 }
 
 /**
+ * Fetches a longer lead-section extract and a larger thumbnail for the detail screen.
+ */
+export async function fetchCelebrityDetail(pageid: number, lang: Lang): Promise<Celebrity> {
+  const config = WIKI_CONFIG[lang];
+  const wikiHost = lang === 'ja' ? 'ja.wikipedia.org' : 'en.wikipedia.org';
+  const data = await wikiGet(config.apiBase, {
+    action: 'query',
+    pageids: String(pageid),
+    prop: 'extracts|pageimages',
+    exintro: 'true',
+    explaintext: 'true',
+    piprop: 'thumbnail',
+    pithumbsize: '800',
+  });
+  const page = data?.query?.pages?.[String(pageid)];
+  if (!page || page.missing !== undefined) {
+    throw new Error('PAGE_NOT_FOUND');
+  }
+  return {
+    pageid: page.pageid,
+    title: page.title,
+    extract: (page.extract ?? '').trim(),
+    thumbnailUrl: page.thumbnail?.source ?? null,
+    pageUrl: `https://${wikiHost}/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
+  };
+}
+
+/**
  * Tries each candidate place name in order (e.g. city -> district -> prefecture)
  * and returns the first one whose Wikipedia category yields results, using
  * either Japanese or English Wikipedia depending on `lang`.

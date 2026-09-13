@@ -23,6 +23,9 @@ export type Strings = {
   permissionDenied: string;
   reverseGeocodeFailed: string;
   placeNotIdentified: string;
+  detailBack: string;
+  detailLoadError: string;
+  detailAttribution: string;
 };
 
 const strings: Record<Lang, Strings> = {
@@ -42,6 +45,9 @@ const strings: Record<Lang, Strings> = {
     permissionDenied: '位置情報の利用が許可されませんでした',
     reverseGeocodeFailed: '現在地の住所を取得できませんでした',
     placeNotIdentified: '現在地から地名を特定できませんでした',
+    detailBack: '← 戻る',
+    detailLoadError: '詳細の読み込みに失敗しました',
+    detailAttribution: '出典: Wikipedia',
   },
   en: {
     title: 'Famous From Here',
@@ -59,6 +65,9 @@ const strings: Record<Lang, Strings> = {
     permissionDenied: 'Location permission was denied',
     reverseGeocodeFailed: 'Could not resolve an address for your location',
     placeNotIdentified: 'Could not identify a place name from your location',
+    detailBack: '← Back',
+    detailLoadError: 'Failed to load details',
+    detailAttribution: 'Source: Wikipedia',
   },
 };
 
