@@ -156,6 +156,7 @@ async function getPageDetails(apiBase: string, pageids: number[], lang: Lang): P
       results.push({
         pageid: page.pageid,
         title: page.title,
+        description: null,
         extract: (page.extract ?? '').trim(),
         thumbnailUrl: page.thumbnail?.source ?? null,
         pageUrl: `https://${wikiHost}/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
@@ -167,8 +168,24 @@ async function getPageDetails(apiBase: string, pageids: number[], lang: Lang): P
   return results;
 }
 
+function cleanExtract(extract: string): string {
+  return extract
+    .split('\n')
+    .filter((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (/^Template:/i.test(trimmed)) return false;
+      if (/^File:/i.test(trimmed)) return false;
+      if (/^Category:/i.test(trimmed)) return false;
+      return true;
+    })
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
- * Fetches a longer lead-section extract and a larger thumbnail for the detail screen.
+ * Fetches the full plain-text article extract and a larger thumbnail for the detail screen.
  */
 export async function fetchCelebrityDetail(pageid: number, lang: Lang): Promise<Celebrity> {
   const config = WIKI_CONFIG[lang];
@@ -176,9 +193,9 @@ export async function fetchCelebrityDetail(pageid: number, lang: Lang): Promise<
   const data = await wikiGet(config.apiBase, {
     action: 'query',
     pageids: String(pageid),
-    prop: 'extracts|pageimages',
-    exintro: 'true',
+    prop: 'extracts|pageimages|description',
     explaintext: 'true',
+    exsectionformat: 'plain',
     piprop: 'thumbnail',
     pithumbsize: '800',
   });
@@ -189,7 +206,8 @@ export async function fetchCelebrityDetail(pageid: number, lang: Lang): Promise<
   return {
     pageid: page.pageid,
     title: page.title,
-    extract: (page.extract ?? '').trim(),
+    description: typeof page.description === 'string' ? page.description.trim() : null,
+    extract: cleanExtract(page.extract ?? ''),
     thumbnailUrl: page.thumbnail?.source ?? null,
     pageUrl: `https://${wikiHost}/wiki/${encodeURIComponent(page.title.replace(/ /g, '_'))}`,
   };

@@ -26,6 +26,15 @@ export type Strings = {
   detailBack: string;
   detailLoadError: string;
   detailAttribution: string;
+  tabSearch: string;
+  tabFavorites: string;
+  tabHistory: string;
+  favoritesEmpty: string;
+  historyEmpty: string;
+  clearHistory: string;
+  addFavorite: string;
+  removeFavorite: string;
+  historySearchAgain: string;
 };
 
 const strings: Record<Lang, Strings> = {
@@ -48,6 +57,15 @@ const strings: Record<Lang, Strings> = {
     detailBack: '← 戻る',
     detailLoadError: '詳細の読み込みに失敗しました',
     detailAttribution: '出典: Wikipedia',
+    tabSearch: '検索',
+    tabFavorites: 'お気に入り',
+    tabHistory: '履歴',
+    favoritesEmpty: 'お気に入りはまだありません。\n詳細画面の★から追加できます。',
+    historyEmpty: '検索履歴はまだありません。',
+    clearHistory: '履歴を消去',
+    addFavorite: 'お気に入りに追加',
+    removeFavorite: 'お気に入り解除',
+    historySearchAgain: '再検索',
   },
   en: {
     title: 'Famous From Here',
@@ -68,6 +86,15 @@ const strings: Record<Lang, Strings> = {
     detailBack: '← Back',
     detailLoadError: 'Failed to load details',
     detailAttribution: 'Source: Wikipedia',
+    tabSearch: 'Search',
+    tabFavorites: 'Favorites',
+    tabHistory: 'History',
+    favoritesEmpty: 'No favorites yet.\nTap ★ on a detail screen to save one.',
+    historyEmpty: 'No search history yet.',
+    clearHistory: 'Clear history',
+    addFavorite: 'Add to favorites',
+    removeFavorite: 'Remove favorite',
+    historySearchAgain: 'Search again',
   },
 };
 

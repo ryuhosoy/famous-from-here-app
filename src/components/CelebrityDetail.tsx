@@ -19,10 +19,50 @@ type Props = {
   celebrity: Celebrity | null;
   lang: Lang;
   t: Strings;
+  isFavorite: boolean;
+  onToggleFavorite: (celebrity: Celebrity) => void;
   onClose: () => void;
 };
 
-export function CelebrityDetail({ celebrity, lang, t, onClose }: Props) {
+type Block =
+  | { type: 'heading'; text: string }
+  | { type: 'paragraph'; text: string };
+
+function parseExtractBlocks(extract: string): Block[] {
+  const normalized = extract
+    .replace(/\r\n/g, '\n')
+    // MediaWiki plaintext sometimes keeps "== Heading ==" markers
+    .replace(/^={2,}\s*(.+?)\s*={2,}\s*$/gm, '$1')
+    .trim();
+  if (!normalized) return [];
+
+  const chunks = normalized.split(/\n{2,}/);
+  const blocks: Block[] = [];
+
+  for (const raw of chunks) {
+    const text = raw.replace(/\n+/g, ' ').trim();
+    if (!text) continue;
+
+    const isHeading =
+      text.length <= 40 &&
+      !/[.!?。！？]$/.test(text) &&
+      !text.includes('。') &&
+      text.split(' ').length <= 8;
+
+    blocks.push(isHeading ? { type: 'heading', text } : { type: 'paragraph', text });
+  }
+
+  return blocks;
+}
+
+export function CelebrityDetail({
+  celebrity,
+  lang,
+  t,
+  isFavorite,
+  onToggleFavorite,
+  onClose,
+}: Props) {
   const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<Celebrity | null>(null);
   const [loading, setLoading] = useState(false);
@@ -58,6 +98,8 @@ export function CelebrityDetail({ celebrity, lang, t, onClose }: Props) {
   }, [celebrity, lang]);
 
   const shown = detail ?? celebrity;
+  const blocks = shown?.extract ? parseExtractBlocks(shown.extract) : [];
+  const favorited = shown ? isFavorite : false;
 
   return (
     <Modal
@@ -71,12 +113,27 @@ export function CelebrityDetail({ celebrity, lang, t, onClose }: Props) {
           <Pressable onPress={onClose} hitSlop={12} style={styles.backButton}>
             <Text style={styles.backButtonText}>{t.detailBack}</Text>
           </Pressable>
+          {shown ? (
+            <Pressable
+              onPress={() => onToggleFavorite(shown)}
+              hitSlop={16}
+              style={styles.favoriteButton}
+              accessibilityRole="button"
+              accessibilityLabel={favorited ? t.removeFavorite : t.addFavorite}
+            >
+              <Text style={[styles.favoriteIcon, favorited && styles.favoriteIconActive]}>
+                {favorited ? '★' : '☆'}
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.favoriteButton} />
+          )}
         </View>
 
         {!shown ? null : (
           <ScrollView
             contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator
           >
             {shown.thumbnailUrl ? (
               <Image source={{ uri: shown.thumbnailUrl }} style={styles.hero} resizeMode="cover" />
@@ -88,15 +145,29 @@ export function CelebrityDetail({ celebrity, lang, t, onClose }: Props) {
 
             <Text style={styles.title}>{shown.title}</Text>
 
-            {shown.extract ? (
-              <Text style={styles.extract}>{shown.extract}</Text>
+            {shown.description ? (
+              <Text style={styles.description}>{shown.description}</Text>
+            ) : null}
+
+            {blocks.length > 0 ? (
+              blocks.map((block, index) =>
+                block.type === 'heading' ? (
+                  <Text key={`h-${index}`} style={styles.sectionHeading}>
+                    {block.text}
+                  </Text>
+                ) : (
+                  <Text key={`p-${index}`} style={styles.extract}>
+                    {block.text}
+                  </Text>
+                )
+              )
             ) : loading ? (
               <ActivityIndicator style={styles.loader} color="#1A73E8" />
             ) : error ? (
               <Text style={styles.errorText}>{t.detailLoadError}</Text>
             ) : null}
 
-            {loading && shown.extract ? (
+            {loading && blocks.length > 0 ? (
               <ActivityIndicator style={styles.loader} color="#1A73E8" />
             ) : null}
 
@@ -116,6 +187,7 @@ const styles = StyleSheet.create({
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderBottomWidth: StyleSheet.hairlineWidth,
@@ -129,6 +201,17 @@ const styles = StyleSheet.create({
     color: '#1A73E8',
     fontSize: 16,
     fontWeight: '600',
+  },
+  favoriteButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  favoriteIcon: {
+    fontSize: 26,
+    color: '#9AA0A6',
+  },
+  favoriteIconActive: {
+    color: '#F9AB00',
   },
   content: {
     paddingHorizontal: 20,
@@ -153,12 +236,26 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#202124',
-    marginBottom: 14,
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#5F6368',
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+  sectionHeading: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#202124',
+    marginTop: 20,
+    marginBottom: 8,
   },
   extract: {
     fontSize: 16,
     lineHeight: 26,
     color: '#3C4043',
+    marginBottom: 14,
   },
   loader: {
     marginTop: 16,
@@ -168,7 +265,7 @@ const styles = StyleSheet.create({
     color: '#D93025',
   },
   attribution: {
-    marginTop: 24,
+    marginTop: 12,
     fontSize: 12,
     color: '#9AA0A6',
   },
