@@ -7,7 +7,7 @@ const HISTORY_FILE = `${FileSystem.documentDirectory}history.json`;
 
 const MAX_FAVORITES = 100;
 const MAX_HISTORY = 30;
-const PREVIEW_EXTRACT_CHARS = 400;
+const OFFLINE_EXTRACT_CHARS = 16000;
 
 async function readJson<T>(uri: string, fallback: T): Promise<T> {
   try {
@@ -35,7 +35,7 @@ export function toFavoriteCelebrity(celebrity: Celebrity): FavoriteCelebrity {
     pageid: celebrity.pageid,
     title: celebrity.title,
     description: celebrity.description ?? null,
-    extract: (celebrity.extract ?? '').slice(0, PREVIEW_EXTRACT_CHARS),
+    extract: (celebrity.extract ?? '').slice(0, OFFLINE_EXTRACT_CHARS),
     thumbnailUrl: celebrity.thumbnailUrl ?? null,
     pageUrl: celebrity.pageUrl,
     savedAt: Date.now(),

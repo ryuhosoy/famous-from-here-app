@@ -49,6 +49,15 @@ export function useLibrary() {
     void saveFavorites(next).catch((e) => console.warn('saveFavorites failed', e));
   }, []);
 
+  const refreshFavorite = useCallback((celebrity: Celebrity) => {
+    const prev = favoritesRef.current;
+    if (!prev.some((item) => item.pageid === celebrity.pageid)) return;
+    const next = upsertFavorite(prev, celebrity);
+    favoritesRef.current = next;
+    setFavorites(next);
+    void saveFavorites(next).catch((e) => console.warn('refreshFavorite failed', e));
+  }, []);
+
   const addHistory = useCallback((place: string) => {
     const next = upsertHistory(historyRef.current, place);
     historyRef.current = next;
@@ -68,6 +77,7 @@ export function useLibrary() {
     history,
     isFavorite,
     toggleFavorite,
+    refreshFavorite,
     addHistory,
     clearHistory,
   };

@@ -34,11 +34,18 @@
         "expo-localization",
         {
           "supportedLocales": {
-            "ios": ["en", "ja"],
-            "android": ["en", "ja"]
+            "ios": [
+              "en",
+              "ja"
+            ],
+            "android": [
+              "en",
+              "ja"
+            ]
           }
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "extra": {
       "eas": {

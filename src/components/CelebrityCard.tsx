@@ -25,8 +25,13 @@ export function CelebrityCard({ item, onPress, favorited }: Props) {
           </Text>
           {favorited ? <Text style={styles.star}>★</Text> : null}
         </View>
+        {item.description ? (
+          <Text style={styles.cardDescription} numberOfLines={1}>
+            {item.description}
+          </Text>
+        ) : null}
         {item.extract ? (
-          <Text style={styles.cardExtract} numberOfLines={3}>
+          <Text style={styles.cardExtract} numberOfLines={item.description ? 2 : 3}>
             {item.extract}
           </Text>
         ) : null}
@@ -76,6 +81,12 @@ const styles = StyleSheet.create({
   star: {
     color: '#F9AB00',
     fontSize: 14,
+  },
+  cardDescription: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1A73E8',
+    marginBottom: 3,
   },
   cardExtract: {
     fontSize: 12,

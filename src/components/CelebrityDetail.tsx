@@ -21,7 +21,9 @@ type Props = {
   t: Strings;
   isFavorite: boolean;
   onToggleFavorite: (celebrity: Celebrity) => void;
+  onDetailLoaded?: (celebrity: Celebrity) => void;
   onClose: () => void;
+  embedded?: boolean;
 };
 
 type Block =
@@ -61,7 +63,9 @@ export function CelebrityDetail({
   t,
   isFavorite,
   onToggleFavorite,
+  onDetailLoaded,
   onClose,
+  embedded = false,
 }: Props) {
   const insets = useSafeAreaInsets();
   const [detail, setDetail] = useState<Celebrity | null>(null);
@@ -83,7 +87,9 @@ export function CelebrityDetail({
 
     fetchCelebrityDetail(celebrity.pageid, lang)
       .then((full) => {
-        if (!cancelled) setDetail(full);
+        if (cancelled) return;
+        setDetail(full);
+        onDetailLoaded?.(full);
       })
       .catch(() => {
         if (!cancelled) setError(true);
@@ -95,11 +101,86 @@ export function CelebrityDetail({
     return () => {
       cancelled = true;
     };
-  }, [celebrity, lang]);
+  }, [celebrity, lang, onDetailLoaded]);
 
   const shown = detail ?? celebrity;
   const blocks = shown?.extract ? parseExtractBlocks(shown.extract) : [];
   const favorited = shown ? isFavorite : false;
+
+  const body = (
+    <View style={[styles.container, !embedded && { paddingTop: insets.top }]}>
+      <View style={styles.toolbar}>
+        <Pressable onPress={onClose} hitSlop={12} style={styles.backButton}>
+          <Text style={styles.backButtonText}>{t.detailBack}</Text>
+        </Pressable>
+        {shown ? (
+          <Pressable
+            onPress={() => onToggleFavorite(shown)}
+            hitSlop={16}
+            style={styles.favoriteButton}
+            accessibilityRole="button"
+            accessibilityLabel={favorited ? t.removeFavorite : t.addFavorite}
+          >
+            <Text style={[styles.favoriteIcon, favorited && styles.favoriteIconActive]}>
+              {favorited ? '★' : '☆'}
+            </Text>
+          </Pressable>
+        ) : (
+          <View style={styles.favoriteButton} />
+        )}
+      </View>
+
+      {!shown ? null : (
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
+          showsVerticalScrollIndicator
+        >
+          {shown.thumbnailUrl ? (
+            <Image source={{ uri: shown.thumbnailUrl }} style={styles.hero} resizeMode="cover" />
+          ) : (
+            <View style={[styles.hero, styles.heroPlaceholder]}>
+              <Text style={styles.heroPlaceholderText}>?</Text>
+            </View>
+          )}
+
+          <Text style={styles.title}>{shown.title}</Text>
+
+          {shown.description ? (
+            <Text style={styles.description}>{shown.description}</Text>
+          ) : null}
+
+          {blocks.length > 0 ? (
+            blocks.map((block, index) =>
+              block.type === 'heading' ? (
+                <Text key={`h-${index}`} style={styles.sectionHeading}>
+                  {block.text}
+                </Text>
+              ) : (
+                <Text key={`p-${index}`} style={styles.extract}>
+                  {block.text}
+                </Text>
+              )
+            )
+          ) : loading ? (
+            <ActivityIndicator style={styles.loader} color="#1A73E8" />
+          ) : error ? (
+            <Text style={styles.errorText}>{t.detailLoadError}</Text>
+          ) : null}
+
+          {loading && blocks.length > 0 ? (
+            <ActivityIndicator style={styles.loader} color="#1A73E8" />
+          ) : null}
+
+          <Text style={styles.attribution}>{t.detailAttribution}</Text>
+        </ScrollView>
+      )}
+    </View>
+  );
+
+  if (embedded) {
+    if (!celebrity) return null;
+    return body;
+  }
 
   return (
     <Modal
@@ -108,73 +189,7 @@ export function CelebrityDetail({
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.toolbar}>
-          <Pressable onPress={onClose} hitSlop={12} style={styles.backButton}>
-            <Text style={styles.backButtonText}>{t.detailBack}</Text>
-          </Pressable>
-          {shown ? (
-            <Pressable
-              onPress={() => onToggleFavorite(shown)}
-              hitSlop={16}
-              style={styles.favoriteButton}
-              accessibilityRole="button"
-              accessibilityLabel={favorited ? t.removeFavorite : t.addFavorite}
-            >
-              <Text style={[styles.favoriteIcon, favorited && styles.favoriteIconActive]}>
-                {favorited ? '★' : '☆'}
-              </Text>
-            </Pressable>
-          ) : (
-            <View style={styles.favoriteButton} />
-          )}
-        </View>
-
-        {!shown ? null : (
-          <ScrollView
-            contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
-            showsVerticalScrollIndicator
-          >
-            {shown.thumbnailUrl ? (
-              <Image source={{ uri: shown.thumbnailUrl }} style={styles.hero} resizeMode="cover" />
-            ) : (
-              <View style={[styles.hero, styles.heroPlaceholder]}>
-                <Text style={styles.heroPlaceholderText}>?</Text>
-              </View>
-            )}
-
-            <Text style={styles.title}>{shown.title}</Text>
-
-            {shown.description ? (
-              <Text style={styles.description}>{shown.description}</Text>
-            ) : null}
-
-            {blocks.length > 0 ? (
-              blocks.map((block, index) =>
-                block.type === 'heading' ? (
-                  <Text key={`h-${index}`} style={styles.sectionHeading}>
-                    {block.text}
-                  </Text>
-                ) : (
-                  <Text key={`p-${index}`} style={styles.extract}>
-                    {block.text}
-                  </Text>
-                )
-              )
-            ) : loading ? (
-              <ActivityIndicator style={styles.loader} color="#1A73E8" />
-            ) : error ? (
-              <Text style={styles.errorText}>{t.detailLoadError}</Text>
-            ) : null}
-
-            {loading && blocks.length > 0 ? (
-              <ActivityIndicator style={styles.loader} color="#1A73E8" />
-            ) : null}
-
-            <Text style={styles.attribution}>{t.detailAttribution}</Text>
-          </ScrollView>
-        )}
-      </View>
+      {body}
     </Modal>
   );
 }
