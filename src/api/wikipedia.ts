@@ -1,8 +1,8 @@
 import { Lang } from '../i18n';
 import { Celebrity, SearchResult } from '../types';
 
-const MAX_MEMBERS = 40;
-const DETAIL_BATCH_SIZE = 20;
+const MEMBER_PAGE_SIZE = 500;
+const DETAIL_BATCH_SIZE = 50;
 
 type WikiConfig = {
   apiBase: string;
@@ -180,15 +180,28 @@ async function getCategoryMembers(
   categoryTitle: string,
   type: 'page' | 'subcat'
 ): Promise<Array<{ pageid: number; title: string }>> {
-  const data = await wikiGet(apiBase, {
-    action: 'query',
-    list: 'categorymembers',
-    cmtitle: categoryTitle,
-    cmtype: type,
-    cmnamespace: type === 'page' ? '0' : '14',
-    cmlimit: String(MAX_MEMBERS),
-  });
-  return data?.query?.categorymembers ?? [];
+  const members: Array<{ pageid: number; title: string }> = [];
+  let cmcontinue: string | undefined;
+
+  do {
+    const data = await wikiGet(apiBase, {
+      action: 'query',
+      list: 'categorymembers',
+      cmtitle: categoryTitle,
+      cmtype: type,
+      cmnamespace: type === 'page' ? '0' : '14',
+      cmlimit: String(MEMBER_PAGE_SIZE),
+      ...(cmcontinue ? { cmcontinue } : {}),
+    });
+    members.push(...(data?.query?.categorymembers ?? []));
+    cmcontinue = data?.continue?.cmcontinue;
+  } while (cmcontinue);
+
+  return members;
+}
+
+function isListArticle(title: string): boolean {
+  return title.includes('一覧') || title.includes('list of');
 }
 
 async function getPeopleFromCategory(
@@ -196,18 +209,19 @@ async function getPeopleFromCategory(
   categoryTitle: string
 ): Promise<Array<{ pageid: number; title: string }>> {
   const pages = await getCategoryMembers(config.apiBase, categoryTitle, 'page');
-  const articles = pages.filter((page) => !page.title.includes('一覧') && !page.title.includes('list of'));
-  if (articles.length > 0) return articles.slice(0, MAX_MEMBERS);
+  const articles = pages.filter((page) => !isListArticle(page.title));
+  if (articles.length > 0) return articles;
 
   const subcats = await getCategoryMembers(config.apiBase, categoryTitle, 'subcat');
   const collected: Array<{ pageid: number; title: string }> = [];
-  for (const subcat of subcats.slice(0, 8)) {
+  const seen = new Set<number>();
+  for (const subcat of subcats) {
     if (!config.isConventionalCategoryTitle(subcat.title)) continue;
     const nested = await getCategoryMembers(config.apiBase, subcat.title, 'page');
     for (const page of nested) {
-      if (page.title.includes('一覧') || page.title.includes('list of')) continue;
+      if (isListArticle(page.title) || seen.has(page.pageid)) continue;
+      seen.add(page.pageid);
       collected.push(page);
-      if (collected.length >= MAX_MEMBERS) return collected;
     }
   }
   return collected;
