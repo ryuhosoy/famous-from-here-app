@@ -10,8 +10,6 @@ export function detectLang(): Lang {
 }
 
 export type Strings = {
-  title: string;
-  subtitle: string;
   inputPlaceholder: string;
   searchButton: string;
   locationButton: string;
@@ -55,8 +53,6 @@ export type Strings = {
 
 const strings: Record<Lang, Strings> = {
   ja: {
-    title: '有名人サーチ',
-    subtitle: '地図で探して、出身有名人をWikipediaから',
     inputPlaceholder: '地名を入力（例: 渋谷区, 京都市）',
     searchButton: '検索',
     locationButton: '📍 現在地から探す',
@@ -98,8 +94,6 @@ const strings: Record<Lang, Strings> = {
     occupationOther: 'その他',
   },
   en: {
-    title: 'Famous From Here',
-    subtitle: 'Search the map and discover famous people via Wikipedia',
     inputPlaceholder: 'Enter a place (e.g. Paris, Tokyo)',
     searchButton: 'Search',
     locationButton: '📍 Use current location',

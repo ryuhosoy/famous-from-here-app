@@ -116,8 +116,6 @@ function AppContent() {
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="auto" />
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{t.title}</Text>
-        <Text style={styles.headerSubtitle}>{t.subtitle}</Text>
         <View style={styles.searchRow}>
           <TextInput
             style={styles.input}
@@ -170,17 +168,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#202124',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#5F6368',
-    marginTop: 2,
-    marginBottom: 10,
   },
   searchRow: {
     flexDirection: 'row',
