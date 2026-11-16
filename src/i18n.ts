@@ -49,6 +49,13 @@ export type Strings = {
   occupationPolitician: string;
   occupationCreator: string;
   occupationOther: string;
+  searchModePlace: string;
+  searchModePerson: string;
+  inputPlaceholderPerson: string;
+  emptyQueryErrorPerson: string;
+  personNotFoundError: string;
+  personHometownNotFoundError: string;
+  personPickTitle: string;
 };
 
 const strings: Record<Lang, Strings> = {
@@ -92,6 +99,13 @@ const strings: Record<Lang, Strings> = {
     occupationPolitician: '政治',
     occupationCreator: 'クリエイター',
     occupationOther: 'その他',
+    searchModePlace: '地名',
+    searchModePerson: '有名人',
+    inputPlaceholderPerson: '有名人の名前（例: 手塚治虫）',
+    emptyQueryErrorPerson: '有名人の名前を入力してください',
+    personNotFoundError: '該当する人物が見つかりませんでした。',
+    personHometownNotFoundError: 'この人物の出身地カテゴリが見つかりませんでした。',
+    personPickTitle: '人物を選択',
   },
   en: {
     inputPlaceholder: 'Enter a place (e.g. Paris, Tokyo)',
@@ -133,6 +147,13 @@ const strings: Record<Lang, Strings> = {
     occupationPolitician: 'Politics',
     occupationCreator: 'Creators',
     occupationOther: 'Other',
+    searchModePlace: 'Place',
+    searchModePerson: 'Person',
+    inputPlaceholderPerson: 'Celebrity name (e.g. Tom Hanks)',
+    emptyQueryErrorPerson: 'Please enter a name',
+    personNotFoundError: 'No matching person was found.',
+    personHometownNotFoundError: 'Could not find a hometown category for this person.',
+    personPickTitle: 'Choose a person',
   },
 };
 

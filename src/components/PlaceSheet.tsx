@@ -2,13 +2,20 @@ import { useEffect, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { fetchCelebrityDetail } from '../api/wikipedia';
 import { Lang, Strings } from '../i18n';
 import { Celebrity, MapPlacePin } from '../types';
 import { CelebrityDetail } from './CelebrityDetail';
 import { PlaceResults } from './PlaceResults';
 
+export type FocusPerson = {
+  pageid: number;
+  title: string;
+};
+
 type Props = {
   pin: MapPlacePin | null;
+  focusPerson: FocusPerson | null;
   lang: Lang;
   t: Strings;
   isFavorite: (pageid: number) => boolean;
@@ -17,8 +24,17 @@ type Props = {
   onClose: () => void;
 };
 
+function findCelebrityInList(celebrities: Celebrity[], focus: FocusPerson): Celebrity | null {
+  return (
+    celebrities.find((item) => item.pageid === focus.pageid) ??
+    celebrities.find((item) => item.title === focus.title) ??
+    null
+  );
+}
+
 export function PlaceSheet({
   pin,
+  focusPerson,
   lang,
   t,
   isFavorite,
@@ -30,8 +46,42 @@ export function PlaceSheet({
   const [selected, setSelected] = useState<Celebrity | null>(null);
 
   useEffect(() => {
-    if (!pin) setSelected(null);
-  }, [pin]);
+    if (!pin) {
+      setSelected(null);
+      return;
+    }
+    if (!focusPerson) {
+      setSelected(null);
+      return;
+    }
+
+    const inList = findCelebrityInList(pin.celebrities, focusPerson);
+    if (inList) {
+      setSelected(inList);
+      return;
+    }
+
+    let cancelled = false;
+    setSelected({
+      pageid: focusPerson.pageid,
+      title: focusPerson.title,
+      description: null,
+      extract: '',
+      thumbnailUrl: null,
+      pageUrl: '',
+    });
+    void fetchCelebrityDetail(focusPerson.pageid, lang)
+      .then((full) => {
+        if (!cancelled) setSelected(full);
+      })
+      .catch(() => {
+        if (!cancelled) setSelected(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pin, focusPerson, lang]);
 
   return (
     <Modal

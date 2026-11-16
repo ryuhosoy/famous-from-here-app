@@ -1,3 +1,4 @@
+import { findCityByQuery } from './cities';
 import { Lang } from '../i18n';
 import { Celebrity, SearchResult } from '../types';
 
@@ -440,6 +441,165 @@ export async function fetchCityPeopleCounts(
   }
 
   return counts;
+}
+
+export type PersonSearchHit = {
+  pageid: number;
+  title: string;
+  snippet: string | null;
+};
+
+export class PersonNotFoundError extends Error {
+  constructor() {
+    super('PERSON_NOT_FOUND');
+  }
+}
+
+export class PersonHometownNotFoundError extends Error {
+  constructor() {
+    super('PERSON_HOMETOWN_NOT_FOUND');
+  }
+}
+
+function isDisambiguationTitle(title: string): boolean {
+  return /曖昧さ回避/.test(title) || /\(disambiguation\)/i.test(title);
+}
+
+/**
+ * Searches Wikipedia articles (main namespace) matching a person name.
+ */
+export async function searchPersonArticles(query: string, lang: Lang): Promise<PersonSearchHit[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  const config = WIKI_CONFIG[lang];
+  const data = await wikiGet(config.apiBase, {
+    action: 'query',
+    list: 'search',
+    srnamespace: '0',
+    srsearch: trimmed,
+    srlimit: '10',
+  });
+  const results: Array<{ pageid?: number; title?: string; snippet?: string }> = data?.query?.search ?? [];
+
+  const hits: PersonSearchHit[] = [];
+  for (const row of results) {
+    if (typeof row.pageid !== 'number' || !row.title) continue;
+    if (isDisambiguationTitle(row.title)) continue;
+    const snippet = typeof row.snippet === 'string' ? row.snippet.replace(/<[^>]+>/g, '') : null;
+    hits.push({ pageid: row.pageid, title: row.title, snippet });
+  }
+  return hits;
+}
+
+async function getPageCategoryTitles(apiBase: string, pageid: number): Promise<string[]> {
+  const titles: string[] = [];
+  let clcontinue: string | undefined;
+
+  do {
+    const data = await wikiGet(apiBase, {
+      action: 'query',
+      pageids: String(pageid),
+      prop: 'categories',
+      cllimit: 'max',
+      clshow: '!hidden',
+      ...(clcontinue ? { clcontinue } : {}),
+    });
+    const pages = data?.query?.pages ?? {};
+    const page = Object.values(pages)[0] as { categories?: Array<{ title: string }> } | undefined;
+    for (const cat of page?.categories ?? []) {
+      if (cat?.title) titles.push(cat.title);
+    }
+    clcontinue = data?.continue?.clcontinue;
+  } while (clcontinue);
+
+  return titles;
+}
+
+function hometownPlacesFromCategories(config: WikiConfig, categoryTitles: string[]): string[] {
+  const places: string[] = [];
+  const seen = new Set<string>();
+  for (const title of categoryTitles) {
+    if (!config.isConventionalCategoryTitle(title)) continue;
+    const place = normalizePlaceName(config.placeFromCategoryTitle(title));
+    if (!place || seen.has(place)) continue;
+    seen.add(place);
+    places.push(place);
+  }
+  return places;
+}
+
+function scoreHometownPlace(place: string, lang: Lang): number {
+  let score = 0;
+  if (findCityByQuery(place, lang)) score += 20;
+  if (lang === 'ja') {
+    if (/区$/.test(place)) score += 8;
+    else if (/市$/.test(place)) score += 6;
+    else if (/町$|村$/.test(place)) score += 4;
+    else if (/都$|府$|県$/.test(place)) score += 2;
+  }
+  score += Math.min(place.length, 40) * 0.05;
+  return score;
+}
+
+function pickBestHometown(places: string[], lang: Lang): string {
+  const ranked = [...places].sort((a, b) => scoreHometownPlace(b, lang) - scoreHometownPlace(a, lang));
+  return ranked[0];
+}
+
+export type PersonHometownResult = {
+  placeUsed: string;
+  candidates: string[];
+  pageid: number;
+  title: string;
+};
+
+/**
+ * Reads "people from X" categories on a person's article and picks the best place to search.
+ */
+export async function resolvePersonHometown(pageid: number, title: string, lang: Lang): Promise<PersonHometownResult> {
+  const primary = WIKI_CONFIG[lang];
+  let places = hometownPlacesFromCategories(primary, await getPageCategoryTitles(primary.apiBase, pageid));
+
+  if (places.length === 0) {
+    const fallbackLang: Lang = lang === 'ja' ? 'en' : 'ja';
+    const fallback = WIKI_CONFIG[fallbackLang];
+    const data = await wikiGet(primary.apiBase, {
+      action: 'query',
+      pageids: String(pageid),
+      prop: 'langlinks',
+      lllimit: '1',
+      lllang: fallbackLang,
+    });
+    const pages = data?.query?.pages ?? {};
+    const page = Object.values(pages)[0] as { langlinks?: Array<{ title: string }> } | undefined;
+    const linkedTitle = page?.langlinks?.[0]?.title;
+    if (linkedTitle) {
+      const linkedData = await wikiGet(fallback.apiBase, {
+        action: 'query',
+        titles: linkedTitle,
+      });
+      const linkedPage = Object.values(linkedData?.query?.pages ?? {})[0] as { pageid?: number } | undefined;
+      if (typeof linkedPage?.pageid === 'number') {
+        const cats = await getPageCategoryTitles(fallback.apiBase, linkedPage.pageid);
+        places = hometownPlacesFromCategories(fallback, cats);
+      }
+    }
+  }
+
+  if (places.length === 0) {
+    throw new PersonHometownNotFoundError();
+  }
+
+  const placeUsed = pickBestHometown(places, lang);
+  const city = findCityByQuery(placeUsed, lang);
+  const candidates = uniqueNames([
+    ...(city?.candidates ?? []),
+    ...expandPlaceCandidates(places),
+    placeUsed,
+  ]);
+
+  return { placeUsed, candidates, pageid, title };
 }
 
 export class NotFoundError extends Error {
